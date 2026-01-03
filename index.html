@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Robot Language: Equation-Driven Sentences</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #05070a; --card: #11141d; --accent: #00f2ff; --text: #a1a1aa; }
+        body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .editor { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .word-card { background: var(--card); border: 1px solid #333; padding: 20px; border-radius: 8px; position: relative; }
+        .word-card h3 { color: var(--accent); margin-top: 0; font-size: 0.9rem; letter-spacing: 2px; }
+        label { display: block; font-size: 0.75rem; color: var(--text); margin-top: 15px; }
+        select, input { background: #000; color: #fff; border: 1px solid #444; padding: 8px; width: 100%; border-radius: 4px; box-sizing: border-box; }
+        .formula-display { font-family: 'Courier New', monospace; font-size: 0.7rem; color: #666; margin-top: 10px; min-height: 40px; background: #000; padding: 5px; border-radius: 4px; }
+        .graph-container { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid #222; height: 450px; }
+        button { background: var(--accent); color: #000; border: none; padding: 15px 40px; cursor: pointer; font-weight: bold; margin: 30px auto; display: block; border-radius: 4px; transition: opacity 0.2s; }
+        button:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>LEXICON_v1: PSYCHOLOGICAL_INTENT</h1>
+        <p style="color: var(--text)">Building sentences through concatenated differential equations.</p>
+    </div>
+
+    <div class="editor">
+        <div class="word-card" id="slot1">
+            <h3>WORD_01</h3>
+            <label>INTENSITY (S)</label>
+            <input type="number" id="w1_a" value="0.2" step="0.1" min="0" max="1">
+            <label>VERB (Transition)</label>
+            <select id="w1_v" onchange="showFormula('w1_v', 'f1_v')">
+                <option value="STARTUP">Startup (Instant)</option>
+            </select>
+            <div id="f1_v" class="formula-display">S(t) = S_end</div>
+            <label>NOUN (Presence)</label>
+            <select id="w1_n" onchange="showFormula('w1_n', 'f1_n')">
+                <option value="BREATHE">Breathe (Bio-Sine)</option>
+                <option value="STILL">Still (Fixed)</option>
+                <option value="FREEZE_DEAD">Freeze (Dead)</option>
+            </select>
+            <div id="f1_n" class="formula-display">S(T) = C + 0.05 * sin(2π * 0.2T)</div>
+        </div>
+
+        <div class="word-card" id="slot2">
+            <h3>WORD_02</h3>
+            <label>INTENSITY (S)</label>
+            <input type="number" id="w2_a" value="0.8" step="0.1" min="0" max="1">
+            <label>VERB (Transition)</label>
+            <select id="w2_v" onchange="showFormula('w2_v', 'f2_v')">
+                <option value="SNAP">Snap (Logarithmic)</option>
+                <option value="GLIDE">Glide (Sigmoid)</option>
+                <option value="HESITATE">Hesitation (Stepped)</option>
+                <option value="SURGE">Surge (Exponential)</option>
+                <option value="SURGE_SLOW">Surge (Slow Build)</option>
+                <option value="SNAP_PULSE">Snap (Quick Pulse)</option>
+            </select>
+            <div id="f2_v" class="formula-display">S(t) = S_start + ΔS(1-(1-t)^4)</div>
+            <label>NOUN (Presence)</label>
+            <select id="w2_n" onchange="showFormula('w2_n', 'f2_n')">
+                <option value="THROB_AROUSED">Throb (Aroused)</option>
+                <option value="THROB_FAST">Throb (Fast)</option>
+                <option value="JITTER">Jitter (Anxious)</option>
+                <option value="SEARCH">Search (OU Process)</option>
+            </select>
+            <div id="f2_n" class="formula-display">S(T) = C + 0.1 * sin(2π * 1.5T)</div>
+        </div>
+
+        <div class="word-card" id="slot3">
+            <h3>WORD_03</h3>
+            <label>INTENSITY (S)</label>
+            <input type="number" id="w3_a" value="0.4" step="0.1" min="0" max="1">
+            <label>VERB (Transition)</label>
+            <select id="w3_v" onchange="showFormula('w3_v', 'f3_v')">
+                <option value="GLIDE_SMOOTH">Glide (Smooth)</option>
+                <option value="GLIDE_VERY_SLOW">Glide (Very Slow)</option>
+                <option value="FADE">Fade (Parabolic)</option>
+                <option value="DRIFT">Drift (Linear)</option>
+                <option value="RECESSION">Linear (Recession)</option>
+            </select>
+            <div id="f3_v" class="formula-display">S(t) = S_start + ΔS * sin(2π * t)</div>
+            <label>NOUN (Presence)</label>
+            <select id="w3_n" onchange="showFormula('w3_n', 'f3_n')">
+                <option value="BREATHE_SLOW">Breathe (Slow)</option>
+                <option value="BREATHE_RETURN">Breathe (Return)</option>
+                <option value="THROB_HIGH">Throb (High Amp)</option>
+                <option value="STILL_TENSION">Still (High Tension)</option>
+            </select>
+            <div id="f3_n" class="formula-display">S(T) = C + 0.03 * sin(2π * 0.1T)</div>
+        </div>
+    </div>
+
+    <button onclick="generateSentence()">GENERATE_INTENT_WAVEFORM</button>
+
+    <div class="graph-container">
+        <canvas id="mainChart"></canvas>
+    </div>
+</div>
+
+<script>
+    const FORMULAS = {
+        // Transitions
+        SNAP: "S(t) = S_start + ΔS(1-(1-t)^4)",
+        GLIDE: "S(t) = S_start + ΔS(3t^2-2t^3)",
+        HESITATE: "S(t) = S_start + ΔS * 5 * floor(5t)",
+        DRIFT: "S(t) = S_start + ΔS * t",
+        FADE: "S(t) = S_start + ΔS(1-t^2)",
+        GLIDE_SMOOTH: "S(t) = S_start + ΔS * sin(2πt)",
+        RECESSION: "S(t) = S_start - ΔS * t",
+        SURGE: "S(t) = S_start + ΔS * t^4",
+        SNAP_PULSE: "S(t) = S_start + ΔS * sin(πt)",
+        SURGE_SLOW: "S(t) = S_start + ΔS * t^6",
+        GLIDE_VERY_SLOW: "S(t) = S_start + ΔS(3t^2-2t^3)",
+        STARTUP: "S(t) = S_end",
+        // States
+        THROB_AROUSED: "S(T) = C + 0.1sin(2π * 1.5T)",
+        STILL: "S(T) = C",
+        JITTER: "S(T) = C + random(-0.03, 0.03)",
+        BREATHE: "S(T) = C + 0.05sin(2π * 0.2T)",
+        SEARCH: "dS = θ(C-S)dt + σdW",
+        FREEZE_DEAD: "S(T) = 0",
+        BREATHE_SLOW: "S(T) = C + 0.03sin(2π * 0.1T)",
+        THROB_FAST: "S(T) = C + 0.1sin(2π * 3.0T)",
+        BREATHE_RETURN: "S(T) = C + FadeIn(sin(0.2T))",
+        THROB_HIGH: "S(T) = C + 0.25sin(2π * 1.0T)",
+        STILL_TENSION: "S(T) = C"
+    };
+
+    const MATH = {
+        VERBS: {
+            SNAP: (t) => 1 - Math.pow(1 - t, 4),
+            GLIDE: (t) => 3*t**2 - 2*t**3,
+            HESITATE: (t) => (Math.floor(t * 5) / 5),
+            DRIFT: (t) => t,
+            FADE: (t) => 1 - t**2,
+            GLIDE_SMOOTH: (t) => Math.sin(2 * Math.PI * t),
+            RECESSION: (t) => t, // Sign handled in logic
+            SURGE: (t) => t**4,
+            SNAP_PULSE: (t) => Math.sin(Math.PI * t),
+            SURGE_SLOW: (t) => t**6,
+            GLIDE_VERY_SLOW: (t) => 3*t**2 - 2*t**3,
+            STARTUP: (t) => 1
+        },
+        NOUNS: {
+            THROB_AROUSED: (T, C) => C + 0.1 * Math.sin(2 * Math.PI * 1.5 * T),
+            STILL: (T, C) => C,
+            JITTER: (T, C) => C + (Math.random() * 0.06 - 0.03),
+            BREATHE: (T, C) => C + 0.05 * Math.sin(2 * Math.PI * 0.2 * T),
+            SEARCH: (T, C, prev) => (prev || C) + 0.1 * (C - (prev || C)) + (Math.random() * 0.04 - 0.02),
+            FREEZE_DEAD: () => 0,
+            BREATHE_SLOW: (T, C) => C + 0.03 * Math.sin(2 * Math.PI * 0.1 * T),
+            THROB_FAST: (T, C) => C + 0.1 * Math.sin(2 * Math.PI * 3.0 * T),
+            BREATHE_RETURN: (T, C) => C + (Math.min(1, T/10) * Math.sin(0.2 * T)),
+            THROB_HIGH: (T, C) => C + 0.25 * Math.sin(2 * Math.PI * 1.0 * T),
+            STILL_TENSION: (T, C) => C
+        }
+    };
+
+    function showFormula(selectId, divId) {
+        const val = document.getElementById(selectId).value;
+        document.getElementById(divId).innerText = FORMULAS[val];
+    }
+
+    let chart;
+    function generateSentence() {
+        let fullData = [];
+        let prevIntensity = 0;
+        let lastValue = 0; // For OU Process continuity
+
+        for (let i = 1; i <= 3; i++) {
+            const target = parseFloat(document.getElementById(`w${i}_a`).value);
+            const verbKey = document.getElementById(`w${i}_v`)?.value || 'STARTUP';
+            const nounKey = document.getElementById(`w${i}_n`).value;
+            const delta = (verbKey === 'RECESSION') ? -(prevIntensity - target) : (target - prevIntensity);
+
+            // 60 frames per word (20 transition, 40 steady state)
+            for (let f = 0; f < 60; f++) {
+                let currentS;
+                let globalT = ( (i-1) * 60 + f) * 0.1;
+
+                if (f < 20) {
+                    let t = f / 20;
+                    currentS = prevIntensity + delta * MATH.VERBS[verbKey](t);
+                } else {
+                    currentS = MATH.NOUNS[nounKey](globalT, target, lastValue);
+                    if (nounKey === 'SEARCH') lastValue = currentS;
+                }
+                fullData.push(Math.max(0, currentS));
+            }
+            prevIntensity = target;
+        }
+
+        render(fullData);
+    }
+
+    function render(data) {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map((_, i) => (i*0.1).toFixed(1) + 's'),
+                datasets: [{
+                    label: 'PSYCHOLOGICAL_INTENT_S(t)',
+                    data: data,
+                    borderColor: '#00f2ff',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { 
+                    y: { min: 0, max: 1.3, grid: { color: '#222' }, ticks: { color: '#666' } },
+                    x: { grid: { display: false }, ticks: { color: '#666' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // Init
+    generateSentence();
+</script>
+
+</body>
+</html>
