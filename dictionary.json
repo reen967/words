@@ -1,0 +1,22 @@
+{
+  "nouns": {
+    "alarmed": {"theta": 96.5, "material": "J4", "desc": "Tension: High energy, jagged"},
+    "miserable": {"theta": 188.7, "material": "J3", "desc": "Shivers: Low energy displeasure"},
+    "bored": {"theta": 237.9, "material": "J1", "desc": "Static: No autonomy"},
+    "sleepy": {"theta": 271.9, "material": "S1", "desc": "Lull: Slowest breath"},
+    "relaxed": {"theta": 310.2, "material": "S2", "desc": "Breathe: Smooth vitality"},
+    "happy": {"theta": 7.8, "material": "S3", "desc": "Pulse: Smooth satisfied rhythm"},
+    "excited": {"theta": 48.5, "material": "S4", "desc": "Vitality: High energy pulse"},
+    "thinking": {"theta": 225.0, "material": "J2", "desc": "Internal processing jitter"},
+    "busy": {"theta": 90.0, "material": "J4", "desc": "Machine heartbeat hum"},
+    "success": {"theta": 45.0, "material": "S4", "desc": "Triumphant organic pulse"},
+    "danger": {"theta": 100.0, "material": "J5", "desc": "Violent erratic alarm"}
+  },
+  "verbs": {
+    "snap": "1 - Math.pow(1 - t, 4)",
+    "glide": "3 * Math.pow(t, 2) - 2 * Math.pow(t, 3)",
+    "surge": "Math.pow(t, 4)",
+    "yield": "Math.sqrt(t)",
+    "fade": "1 - Math.pow(1 - t, 2)"
+  }
+}
