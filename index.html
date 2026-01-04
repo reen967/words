@@ -6,77 +6,104 @@
     <style>
         body { font-family: 'Courier New', monospace; background: #0f172a; color: #38bdf8; padding: 40px; line-height: 1.6; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .panel { border: 1px solid #1e293b; padding: 20px; background: #1e293b55; border-radius: 8px; }
-        .equation { color: #facc15; font-size: 1.1em; background: #000; padding: 10px; border-radius: 4px; margin: 10px 0; }
-        select, input { background: #0f172a; color: #38bdf8; border: 1px solid #38bdf8; padding: 5px; width: 100%; margin-bottom: 10px; }
-        .step-label { color: #94a3b8; font-weight: bold; text-transform: uppercase; font-size: 0.8em; }
-        #canvas { border: 1px solid #334155; width: 100%; height: 300px; background: #000; }
+        .panel { border: 1px solid #1e293b; padding: 20px; background: #1e293b55; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .equation { color: #facc15; font-size: 1.1em; background: #000; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #38bdf8; }
+        select, input { background: #0f172a; color: #38bdf8; border: 1px solid #38bdf8; padding: 8px; width: 100%; margin-bottom: 15px; border-radius: 4px; }
+        .step-label { color: #94a3b8; font-weight: bold; text-transform: uppercase; font-size: 0.8em; margin-top: 15px; }
+        #effort_readout { font-size: 2.5em; text-align: center; color: #00ffcc; text-shadow: 0 0 10px #00ffcc44; }
+        button { width: 100%; padding: 15px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        button:hover { background: #0ea5e9; transform: translateY(-2px); }
+        hr { border: 0; border-top: 1px solid #334155; margin: 20px 0; }
     </style>
 </head>
 <body>
     <h1>UARL Mathematical Engine v1.0</h1>
     <div class="grid">
         <div class="panel">
-            <h3>1. Variable Selection</h3>
+            <h3>1. Variable Selection (The Intent)</h3>
             
-            <label>Start Noun (N1)</label>
+            <label>Start Noun ($N_1$)</label>
             <select id="startNoun"></select>
 
-            <label>Verb (Path Formula)</label>
+            <label>Verb (The Path Formula $u$)</label>
             <select id="verb"></select>
 
-            <label>End Noun (N2)</label>
+            <label>End Noun ($N_2$)</label>
             <select id="endNoun"></select>
 
             <hr>
-            <h3>2. Hardware Capability Tuning</h3>
+            <h3>2. Hardware Capability (The Antenna)</h3>
             <label>Human Antenna Target</label>
             <select id="antenna"></select>
 
-            <label>Weber Threshold (Floor)</label>
-            <input type="number" id="h_floor" value="0.1" step="0.05">
+            <label>Weber Threshold ($E_{min}$ - Noise Floor)</label>
+            <input type="number" id="h_floor" value="0.1" step="0.05" min="0" max="1">
 
-            <label>Mechanical Max (Ceiling)</label>
-            <input type="number" id="h_ceiling" value="0.9" step="0.05">
+            <label>Mechanical Limit ($E_{max}$ - Ceiling)</label>
+            <input type="number" id="h_ceiling" value="0.9" step="0.05" min="0" max="1">
             
-            <button onclick="execute()" style="width:100%; padding:10px; background:#38bdf8; color:#0f172a; font-weight:bold; border:none; cursor:pointer;">SOLVE EQUATIONS</button>
+            <button onclick="execute()">SOLVE & PERFORM</button>
         </div>
 
         <div class="panel">
-            <h3>3. Equation Execution Step-by-Step</h3>
+            <h3>3. Step-by-Step Execution Logic</h3>
             
-            <div class="step-label">Step 1: Progress Vector</div>
+            <div class="step-label">Step 1: Progress Vector (Time interpolation)</div>
             <div id="eq_verb" class="equation">u = f(t)</div>
 
-            <div class="step-label">Step 2: Emotion Coordinate (P)</div>
+            <div class="step-label">Step 2: Emotion Coordinate (Circumplex Map)</div>
             <div id="eq_coord" class="equation">P = N1 + (N2 - N1) * u</div>
 
-            <div class="step-label">Step 3: Stevens' Perception Scaling</div>
+            <div class="step-label">Step 3: Stevens' Power Law (Perceptual Warp)</div>
             <div id="eq_stevens" class="equation">I_adj = I ^ (1/α)</div>
 
-            <div class="step-label">Step 4: Real-Time Percieved Effort</div>
-            <div id="effort_readout" style="font-size: 2em; text-align: center;">0.00%</div>
+            <div class="step-label">Step 4: Real-Time Percieved Effort Output</div>
+            <div id="effort_readout">0.00%</div>
             
-            <canvas id="canvas"></canvas>
+            <p style="color: #94a3b8; font-size: 0.8em;">Note: The "Material" (S2 Breathe / J2 Jitter) is automatically selected based on the Valence (X) sign.</p>
         </div>
     </div>
 
-    <script type="module">
-        import { Registry } from './registry.js';
-        import { UARLCalculator } from './calculator.js';
-
-        // Populate Dropdowns
-        const populate = (id, data) => {
-            const el = document.getElementById(id);
-            Object.keys(data).forEach(key => el.innerHTML += `<option value="${key}">${key}</option>`);
+    <script>
+        // --- REGISTRY DATA ---
+        const Registry = {
+            nouns: {
+                "Alive/Ready": { x: 1.0, y: 0.0, material: "S2 (Sine)" },
+                "Thinking": { x: -0.7, y: -0.7, material: "J2 (Jitter)" },
+                "Alarmed": { x: -0.5, y: 0.8, material: "J5 (Spike)" },
+                "Calm/Focus": { x: 0.3, y: -0.8, material: "S1 (Flat)" }
+            },
+            verbs: {
+                "Glide": { formula: "3t² - 2t³", fn: (t) => 3*Math.pow(t,2) - 2*Math.pow(t,3) },
+                "Snap": { formula: "√t", fn: (t) => Math.sqrt(t) },
+                "Linear": { formula: "t", fn: (t) => t }
+            },
+            antennas: {
+                "Looming (Optical)": { alpha: 1.0, name: "Expansion" },
+                "Vibration (Tactile)": { alpha: 1.45, name: "Mechanoreception" },
+                "Brightness (Visual)": { alpha: 0.33, name: "Luminance" }
+            }
         };
 
-        populate('startNoun', Registry.nouns);
-        populate('endNoun', Registry.nouns);
-        populate('verb', Registry.verbs);
-        populate('antenna', Registry.antennas);
+        // --- POPULATE DROPDOWNS ---
+        function populate() {
+            const setup = (id, data) => {
+                const el = document.getElementById(id);
+                Object.keys(data).forEach(key => {
+                    let opt = document.createElement('option');
+                    opt.value = key;
+                    opt.innerHTML = key;
+                    el.appendChild(opt);
+                });
+            };
+            setup('startNoun', Registry.nouns);
+            setup('endNoun', Registry.nouns);
+            setup('verb', Registry.verbs);
+            setup('antenna', Registry.antennas);
+        }
 
-        window.execute = () => {
+        // --- MATH EXECUTION ---
+        function execute() {
             const n1 = Registry.nouns[document.getElementById('startNoun').value];
             const n2 = Registry.nouns[document.getElementById('endNoun').value];
             const verbKey = document.getElementById('verb').value;
@@ -85,25 +112,36 @@
             const ceiling = parseFloat(document.getElementById('h_ceiling').value);
 
             let t = 0;
-            const step = () => {
+            function step() {
                 t += 0.01;
+                
+                // Formula 1: Progress
                 const u = Registry.verbs[verbKey].fn(t);
-                const p = UARLCalculator.getEmotionPoint(n1, n2, u);
-                const rawI = Math.sqrt(p.x**2 + p.y**2);
                 
-                // MATH UPDATES
-                document.getElementById('eq_verb').innerText = `u = ${Registry.verbs[verbKey].formula} = ${u.toFixed(2)}`;
-                document.getElementById('eq_coord').innerText = `P = (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
-                document.getElementById('eq_stevens').innerText = `I_adj = ${rawI.toFixed(2)} ^ (1/${antenna.alpha}) = ${UARLCalculator.applyStevens(rawI, antenna.alpha).toFixed(2)}`;
+                // Formula 2: Coordinates
+                const px = n1.x + (n2.x - n1.x) * u;
+                const py = n1.y + (n2.y - n1.y) * u;
+                const rawI = Math.sqrt(px*px + py*py);
                 
-                const corrected = UARLCalculator.applyStevens(rawI, antenna.alpha);
-                const final = UARLCalculator.normalize(corrected, floor, ceiling);
-                document.getElementById('effort_readout').innerText = `${(final * 100).toFixed(2)}% Effort`;
+                // Formula 3: Stevens' Power Law
+                const corrected = Math.pow(rawI, 1 / antenna.alpha);
+                
+                // Formula 4: Final Hardware Scaling
+                const final = floor + (corrected * (ceiling - floor));
+
+                // UPDATE UI
+                document.getElementById('eq_verb').innerText = `u = ${Registry.verbs[verbKey].formula} = ${u.toFixed(3)}`;
+                document.getElementById('eq_coord').innerText = `P = (${px.toFixed(2)}, ${py.toFixed(2)}) | Intensity I = ${rawI.toFixed(3)}`;
+                document.getElementById('eq_stevens').innerText = `I_adj = ${rawI.toFixed(3)} ^ (1/${antenna.alpha}) = ${corrected.toFixed(3)}`;
+                document.getElementById('effort_readout').innerText = `${(final * 100).toFixed(2)}%`;
 
                 if (t < 1) requestAnimationFrame(step);
-            };
+            }
             step();
-        };
+        }
+
+        // Initialize
+        window.onload = populate;
     </script>
 </body>
 </html>
