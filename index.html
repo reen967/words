@@ -1,142 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robot Language: Sentence Generator</title>
+    <title>Robot Language Visualizer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #e0e0e0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 8px; }
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        select, input { padding: 10px; background: #333; color: white; border: 1px solid #444; border-radius: 4px; }
-        canvas { background: #000; border-radius: 4px; }
-        h1 { color: #00ffcc; text-align: center; }
-        .label { margin-bottom: 5px; font-weight: bold; font-size: 0.9em; color: #aaa; }
+        body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; }
+        .controls { padding: 20px; background: #333; border-radius: 8px; margin: 20px; }
+        .stage { display: flex; gap: 50px; margin-top: 30px; align-items: center; height: 200px; }
+        #light { width: 80px; height: 80px; border-radius: 50%; background: #fff; box-shadow: 0 0 20px #fff; }
+        #box { width: 80px; height: 80px; background: #666; border: 2px solid #999; }
+        #chart-container { width: 800px; height: 300px; background: #000; padding: 10px; }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h1>Robot Sentence Engine</h1>
+    <h2>Affective Robot Language Engine</h2>
     
     <div class="controls">
-        <div>
-            <div class="label">Start Noun</div>
-            <select id="startNoun"></select>
-        </div>
-        <div>
-            <div class="label">End Noun</div>
-            <select id="endNoun"></select>
-        </div>
-        <div>
-            <div class="label">Verb (Transition Curve)</div>
-            <select id="verbType">
-                <option value="snap">Snap (Logarithmic)</option>
-                <option value="glide">Glide (Sigmoid)</option>
-                <option value="surge">Surge (Exponential)</option>
-            </select>
-        </div>
-        <div>
-            <div class="label">Duration (seconds)</div>
-            <input type="number" id="duration" value="2" step="0.1">
-        </div>
+        Start Noun: <select id="startNoun"></select>
+        Verb: <select id="verb"></select>
+        End Noun: <select id="endNoun"></select>
+        <button onclick="playSentence()">Play Sentence</button>
     </div>
 
-    <canvas id="waveChart" width="800" height="400"></canvas>
-</div>
+    <div id="chart-container"><canvas id="waveChart"></canvas></div>
 
-<script>
-// 1. THE DICTIONARY (Russell 1980 Coordinates)
-const emotionTable = [
-    { word: "Happy", deg: 7.8 }, { word: "Excited", deg: 48.5 },
-    { word: "Alarmed", deg: 96.5 }, { word: "Angry", deg: 119.5 },
-    { word: "Distressed", deg: 151.7 }, { word: "Miserable", deg: 188.7 },
-    { word: "Sad", deg: 193.3 }, { word: "Depressed", deg: 215.1 },
-    { word: "Bored", deg: 237.9 }, { word: "Sleepy", deg: 271.9 },
-    { word: "Calm", deg: 294.1 }, { word: "Relaxed", deg: 310.2 },
-    { word: "Content", deg: 341.2 }, { word: "Serene", deg: 348.5 }
-];
+    <div class="stage">
+        <div><p>Light Antenna</p><div id="light"></div></div>
+        <div><p>Kinetic Antenna</p><div id="box"></div></div>
+    </div>
 
-// Populate Dropdowns
-const startSelect = document.getElementById('startNoun');
-const endSelect = document.getElementById('endNoun');
+    <script src="dictionary.js"></script>
+    <script>
+        // Populate Selects
+        const nSel1 = document.getElementById('startNoun');
+        const nSel2 = document.getElementById('endNoun');
+        const vSel = document.getElementById('verb');
 
-emotionTable.forEach(e => {
-    let opt1 = new Option(e.word, e.deg);
-    let opt2 = new Option(e.word, e.deg);
-    startSelect.add(opt1);
-    endSelect.add(opt2);
-});
-startSelect.value = "294.1"; // Default Calm
-endSelect.value = "96.5";   // Default Alarmed
+        Object.keys(Dictionary.nouns).forEach(n => {
+            nSel1.add(new Option(n, n));
+            nSel2.add(new Option(n, n));
+        });
+        Object.keys(Dictionary.verbs).forEach(v => vSel.add(new Option(v, v)));
 
-// 2. THE VERB EQUATIONS
-const verbs = {
-    snap: (t) => 1 - Math.pow(1 - t, 4),
-    glide: (t) => 3 * Math.pow(t, 2) - 2 * Math.pow(t, 3),
-    surge: (t) => Math.pow(t, 4)
-};
+        // Setup Chart
+        const ctx = document.getElementById('waveChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: Array.from({length: 100}, (_, i) => i), datasets: [{ label: 'Ψ Signal', data: [], borderColor: '#00ffcc', borderWidth: 2, pointRadius: 0 }] },
+            options: { animation: false, scales: { y: { min: -1.5, max: 1.5 } } }
+        });
 
-// 3. CHARTING SETUP
-const ctx = document.getElementById('waveChart').getContext('2d');
-let waveChart = new Chart(ctx, {
-    type: 'line',
-    data: { labels: [], datasets: [{ label: 'Robot Output (Arousal)', data: [], borderColor: '#00ffcc', borderWidth: 2, pointRadius: 0 }] },
-    options: { scales: { y: { min: -1.5, max: 1.5 }, x: { title: { display: true, text: 'Time (s)' } } } }
-});
+        let animationId;
+        function playSentence() {
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            const n1 = Dictionary.nouns[nSel1.value];
+            const n2 = Dictionary.nouns[nSel2.value];
+            const verb = Dictionary.verbs[vSel.value];
+            
+            let startTime = performance.now();
+            const duration = 2000; // 2 seconds transition
 
-function calculateWave() {
-    const startDeg = parseFloat(startSelect.value);
-    const endDeg = parseFloat(endSelect.value);
-    const duration = parseFloat(document.getElementById('duration').value);
-    const verb = document.getElementById('verbType').value;
-    
-    const timeStep = 0.05;
-    const totalTime = 5.0; // Total window
-    const transitionStart = 1.0;
-    
-    let labels = [];
-    let data = [];
+            function animate(now) {
+                let t = (now - startTime) / duration;
+                if (t > 1) t = 1;
 
-    // Shortest path logic
-    let diff = (endDeg - startDeg + 180) % 360 - 180;
+                const u = verb(t);
+                
+                // Angular Pathing
+                let dTheta = n2.theta - n1.theta;
+                if (dTheta > 180) dTheta -= 360;
+                if (dTheta < -180) dTheta += 360;
+                
+                const currentTheta = n1.theta + (dTheta * u);
+                const x = Math.cos(currentTheta * Math.PI / 180);
+                const y = Math.sin(currentTheta * Math.PI / 180);
 
-    for (let t = 0; t <= totalTime; t += timeStep) {
-        let u = 0;
-        if (t > transitionStart) {
-            let tNorm = Math.min(1, (t - transitionStart) / duration);
-            u = verbs[verb](tNorm);
+                // Texture Selection (The Switch)
+                const matKey = x >= 0 ? 
+                    Dictionary.nouns[t < 0.5 ? nSel1.value : nSel2.value].material : 
+                    Dictionary.nouns[t < 0.5 ? nSel1.value : nSel2.value].material;
+                // Simplified: use end noun material if past halfway
+                const activeMat = Dictionary.materials[t < 0.5 ? n1.material : n2.material];
+                
+                const psi = y + activeMat(now / 100);
+
+                // Update Visuals
+                document.getElementById('light').style.opacity = (psi + 1.5) / 3;
+                document.getElementById('light').style.boxShadow = `0 0 ${((psi + 1.5) * 20)}px #fff`;
+                document.getElementById('box').style.transform = `translateY(${psi * 20}px)`;
+
+                // Update Chart
+                chart.data.datasets[0].data.push(psi);
+                if (chart.data.datasets[0].data.length > 100) chart.data.datasets[0].data.shift();
+                chart.update();
+
+                if (t < 1) animationId = requestAnimationFrame(animate);
+            }
+            chart.data.datasets[0].data = [];
+            requestAnimationFrame(animate);
         }
-
-        let currentDeg = startDeg + (diff * u);
-        let currentRad = currentDeg * (Math.PI / 180);
-        
-        // 4. THE NOUN (Oscillation)
-        let x = Math.cos(currentRad); // Valence
-        let y = Math.sin(currentRad); // Arousal
-        
-        let oscillation = 0;
-        if (x > 0) {
-            oscillation = 0.1 * Math.sin(t * 15); // Smooth
-        } else {
-            oscillation = 0.15 * (Math.random() - 0.5); // Jagged
-        }
-
-        labels.push(t.toFixed(2));
-        data.push(y + oscillation);
-    }
-
-    waveChart.data.labels = labels;
-    waveChart.data.datasets[0].data = data;
-    waveChart.update();
-}
-
-[startSelect, endSelect, document.getElementById('verbType'), document.getElementById('duration')].forEach(el => {
-    el.addEventListener('change', calculateWave);
-});
-
-calculateWave();
-</script>
+    </script>
 </body>
 </html>
