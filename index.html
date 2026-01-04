@@ -1,104 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Robot Language Visualizer</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>UARL Robot Lab</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; }
-        .controls { padding: 20px; background: #333; border-radius: 8px; margin: 20px; }
-        .stage { display: flex; gap: 50px; margin-top: 30px; align-items: center; height: 200px; }
-        #light { width: 80px; height: 80px; border-radius: 50%; background: #fff; box-shadow: 0 0 20px #fff; }
-        #box { width: 80px; height: 80px; background: #666; border: 2px solid #999; }
-        #chart-container { width: 800px; height: 300px; background: #000; padding: 10px; }
+        body { font-family: sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
+        .card { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        .output-bar { height: 20px; background: #444; width: 100%; border-radius: 10px; overflow: hidden; }
+        .fill { height: 100%; background: #00ffcc; transition: width 0.1s; }
+        .log { font-family: monospace; font-size: 12px; color: #00ffcc; }
     </style>
 </head>
 <body>
-    <h2>Affective Robot Language Engine</h2>
+    <h1>UARL: Create a Robot</h1>
     
-    <div class="controls">
-        Start Noun: <select id="startNoun"></select>
-        Verb: <select id="verb"></select>
-        End Noun: <select id="endNoun"></select>
-        <button onclick="playSentence()">Play Sentence</button>
+    <div class="card">
+        <h3>1. Hardware Setup</h3>
+        <button onclick="addOrb()">Add Glowing Orb (Light)</button>
+        <button onclick="addBox()">Add Delivery Box (Motor)</button>
+        <div id="robot-status">No Capabilities Added</div>
     </div>
 
-    <div id="chart-container"><canvas id="waveChart"></canvas></div>
-
-    <div class="stage">
-        <div><p>Light Antenna</p><div id="light"></div></div>
-        <div><p>Kinetic Antenna</p><div id="box"></div></div>
+    <div class="card">
+        <h3>2. The Sentence</h3>
+        From: <b>Alive/Ready</b> [Verb: <b>Glide</b>] To: <b>Thinking</b>
+        <br><br>
+        <button onclick="runSentence()">Execute Sentence</button>
     </div>
 
-    <script src="dictionary.js"></script>
-    <script>
-        // Populate Selects
-        const nSel1 = document.getElementById('startNoun');
-        const nSel2 = document.getElementById('endNoun');
-        const vSel = document.getElementById('verb');
+    <div class="card">
+        <h3>3. Real-Time Human Antenna Loads</h3>
+        <div id="display"></div>
+    </div>
 
-        Object.keys(Dictionary.nouns).forEach(n => {
-            nSel1.add(new Option(n, n));
-            nSel2.add(new Option(n, n));
-        });
-        Object.keys(Dictionary.verbs).forEach(v => vSel.add(new Option(v, v)));
+    <script type="module">
+        import { Robot, RobotCapability } from './robot.js';
+        import { SensoryKernel } from './uarl.js';
 
-        // Setup Chart
-        const ctx = document.getElementById('waveChart').getContext('2d');
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: Array.from({length: 100}, (_, i) => i), datasets: [{ label: 'Ψ Signal', data: [], borderColor: '#00ffcc', borderWidth: 2, pointRadius: 0 }] },
-            options: { animation: false, scales: { y: { min: -1.5, max: 1.5 } } }
-        });
+        let myRobot = new Robot("TestBot");
+        let kernel = new SensoryKernel(myRobot);
 
-        let animationId;
-        function playSentence() {
-            if (animationId) cancelAnimationFrame(animationId);
-            
-            const n1 = Dictionary.nouns[nSel1.value];
-            const n2 = Dictionary.nouns[nSel2.value];
-            const verb = Dictionary.verbs[vSel.value];
-            
-            let startTime = performance.now();
-            const duration = 2000; // 2 seconds transition
+        window.addOrb = () => {
+            myRobot.addCapability(new RobotCapability("Main LED", "BRIGHTNESS", 0.05, 1.0));
+            document.getElementById('robot-status').innerText = myRobot.getSummary();
+        };
 
-            function animate(now) {
-                let t = (now - startTime) / duration;
-                if (t > 1) t = 1;
+        window.addBox = () => {
+            myRobot.addCapability(new RobotCapability("Vibration Motor", "VIBRATION", 0.15, 0.85));
+            document.getElementById('robot-status').innerText = myRobot.getSummary();
+        };
 
-                const u = verb(t);
-                
-                // Angular Pathing
-                let dTheta = n2.theta - n1.theta;
-                if (dTheta > 180) dTheta -= 360;
-                if (dTheta < -180) dTheta += 360;
-                
-                const currentTheta = n1.theta + (dTheta * u);
-                const x = Math.cos(currentTheta * Math.PI / 180);
-                const y = Math.sin(currentTheta * Math.PI / 180);
+        window.runSentence = () => {
+            let t = 0;
+            const interval = setInterval(() => {
+                t += 0.02;
+                if (t > 1) clearInterval(interval);
 
-                // Texture Selection (The Switch)
-                const matKey = x >= 0 ? 
-                    Dictionary.nouns[t < 0.5 ? nSel1.value : nSel2.value].material : 
-                    Dictionary.nouns[t < 0.5 ? nSel1.value : nSel2.value].material;
-                // Simplified: use end noun material if past halfway
-                const activeMat = Dictionary.materials[t < 0.5 ? n1.material : n2.material];
-                
-                const psi = y + activeMat(now / 100);
+                const results = kernel.calculateState({
+                    startNoun: "ALIVE_READY",
+                    verb: "GLIDE",
+                    endNoun: "THINKING"
+                }, t);
 
-                // Update Visuals
-                document.getElementById('light').style.opacity = (psi + 1.5) / 3;
-                document.getElementById('light').style.boxShadow = `0 0 ${((psi + 1.5) * 20)}px #fff`;
-                document.getElementById('box').style.transform = `translateY(${psi * 20}px)`;
+                render(results, t);
+            }, 50);
+        };
 
-                // Update Chart
-                chart.data.datasets[0].data.push(psi);
-                if (chart.data.datasets[0].data.length > 100) chart.data.datasets[0].data.shift();
-                chart.update();
-
-                if (t < 1) animationId = requestAnimationFrame(animate);
-            }
-            chart.data.datasets[0].data = [];
-            requestAnimationFrame(animate);
+        function render(results, t) {
+            const container = document.getElementById('display');
+            container.innerHTML = `Time: ${t.toFixed(2)}<br>`;
+            results.forEach(res => {
+                container.innerHTML += `
+                    <div>
+                        ${res.capability} (${res.antennaTarget}): ${res.intensityPerc}% effort
+                        <div class="output-bar"><div class="fill" style="width: ${res.intensityPerc}%"></div></div>
+                    </div><br>`;
+            });
         }
     </script>
 </body>
