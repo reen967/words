@@ -1,81 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>UARL Robot Lab</title>
+    <meta charset="UTF-8">
+    <title>UARL Mathematical Laboratory</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
-        .card { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
-        .output-bar { height: 20px; background: #444; width: 100%; border-radius: 10px; overflow: hidden; }
-        .fill { height: 100%; background: #00ffcc; transition: width 0.1s; }
-        .log { font-family: monospace; font-size: 12px; color: #00ffcc; }
+        body { font-family: 'Courier New', monospace; background: #0f172a; color: #38bdf8; padding: 40px; line-height: 1.6; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .panel { border: 1px solid #1e293b; padding: 20px; background: #1e293b55; border-radius: 8px; }
+        .equation { color: #facc15; font-size: 1.1em; background: #000; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        select, input { background: #0f172a; color: #38bdf8; border: 1px solid #38bdf8; padding: 5px; width: 100%; margin-bottom: 10px; }
+        .step-label { color: #94a3b8; font-weight: bold; text-transform: uppercase; font-size: 0.8em; }
+        #canvas { border: 1px solid #334155; width: 100%; height: 300px; background: #000; }
     </style>
 </head>
 <body>
-    <h1>UARL: Create a Robot</h1>
-    
-    <div class="card">
-        <h3>1. Hardware Setup</h3>
-        <button onclick="addOrb()">Add Glowing Orb (Light)</button>
-        <button onclick="addBox()">Add Delivery Box (Motor)</button>
-        <div id="robot-status">No Capabilities Added</div>
-    </div>
+    <h1>UARL Mathematical Engine v1.0</h1>
+    <div class="grid">
+        <div class="panel">
+            <h3>1. Variable Selection</h3>
+            
+            <label>Start Noun (N1)</label>
+            <select id="startNoun"></select>
 
-    <div class="card">
-        <h3>2. The Sentence</h3>
-        From: <b>Alive/Ready</b> [Verb: <b>Glide</b>] To: <b>Thinking</b>
-        <br><br>
-        <button onclick="runSentence()">Execute Sentence</button>
-    </div>
+            <label>Verb (Path Formula)</label>
+            <select id="verb"></select>
 
-    <div class="card">
-        <h3>3. Real-Time Human Antenna Loads</h3>
-        <div id="display"></div>
+            <label>End Noun (N2)</label>
+            <select id="endNoun"></select>
+
+            <hr>
+            <h3>2. Hardware Capability Tuning</h3>
+            <label>Human Antenna Target</label>
+            <select id="antenna"></select>
+
+            <label>Weber Threshold (Floor)</label>
+            <input type="number" id="h_floor" value="0.1" step="0.05">
+
+            <label>Mechanical Max (Ceiling)</label>
+            <input type="number" id="h_ceiling" value="0.9" step="0.05">
+            
+            <button onclick="execute()" style="width:100%; padding:10px; background:#38bdf8; color:#0f172a; font-weight:bold; border:none; cursor:pointer;">SOLVE EQUATIONS</button>
+        </div>
+
+        <div class="panel">
+            <h3>3. Equation Execution Step-by-Step</h3>
+            
+            <div class="step-label">Step 1: Progress Vector</div>
+            <div id="eq_verb" class="equation">u = f(t)</div>
+
+            <div class="step-label">Step 2: Emotion Coordinate (P)</div>
+            <div id="eq_coord" class="equation">P = N1 + (N2 - N1) * u</div>
+
+            <div class="step-label">Step 3: Stevens' Perception Scaling</div>
+            <div id="eq_stevens" class="equation">I_adj = I ^ (1/α)</div>
+
+            <div class="step-label">Step 4: Real-Time Percieved Effort</div>
+            <div id="effort_readout" style="font-size: 2em; text-align: center;">0.00%</div>
+            
+            <canvas id="canvas"></canvas>
+        </div>
     </div>
 
     <script type="module">
-        import { Robot, RobotCapability } from './robot.js';
-        import { SensoryKernel } from './uarl.js';
+        import { Registry } from './registry.js';
+        import { UARLCalculator } from './calculator.js';
 
-        let myRobot = new Robot("TestBot");
-        let kernel = new SensoryKernel(myRobot);
-
-        window.addOrb = () => {
-            myRobot.addCapability(new RobotCapability("Main LED", "BRIGHTNESS", 0.05, 1.0));
-            document.getElementById('robot-status').innerText = myRobot.getSummary();
+        // Populate Dropdowns
+        const populate = (id, data) => {
+            const el = document.getElementById(id);
+            Object.keys(data).forEach(key => el.innerHTML += `<option value="${key}">${key}</option>`);
         };
 
-        window.addBox = () => {
-            myRobot.addCapability(new RobotCapability("Vibration Motor", "VIBRATION", 0.15, 0.85));
-            document.getElementById('robot-status').innerText = myRobot.getSummary();
-        };
+        populate('startNoun', Registry.nouns);
+        populate('endNoun', Registry.nouns);
+        populate('verb', Registry.verbs);
+        populate('antenna', Registry.antennas);
 
-        window.runSentence = () => {
+        window.execute = () => {
+            const n1 = Registry.nouns[document.getElementById('startNoun').value];
+            const n2 = Registry.nouns[document.getElementById('endNoun').value];
+            const verbKey = document.getElementById('verb').value;
+            const antenna = Registry.antennas[document.getElementById('antenna').value];
+            const floor = parseFloat(document.getElementById('h_floor').value);
+            const ceiling = parseFloat(document.getElementById('h_ceiling').value);
+
             let t = 0;
-            const interval = setInterval(() => {
-                t += 0.02;
-                if (t > 1) clearInterval(interval);
+            const step = () => {
+                t += 0.01;
+                const u = Registry.verbs[verbKey].fn(t);
+                const p = UARLCalculator.getEmotionPoint(n1, n2, u);
+                const rawI = Math.sqrt(p.x**2 + p.y**2);
+                
+                // MATH UPDATES
+                document.getElementById('eq_verb').innerText = `u = ${Registry.verbs[verbKey].formula} = ${u.toFixed(2)}`;
+                document.getElementById('eq_coord').innerText = `P = (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
+                document.getElementById('eq_stevens').innerText = `I_adj = ${rawI.toFixed(2)} ^ (1/${antenna.alpha}) = ${UARLCalculator.applyStevens(rawI, antenna.alpha).toFixed(2)}`;
+                
+                const corrected = UARLCalculator.applyStevens(rawI, antenna.alpha);
+                const final = UARLCalculator.normalize(corrected, floor, ceiling);
+                document.getElementById('effort_readout').innerText = `${(final * 100).toFixed(2)}% Effort`;
 
-                const results = kernel.calculateState({
-                    startNoun: "ALIVE_READY",
-                    verb: "GLIDE",
-                    endNoun: "THINKING"
-                }, t);
-
-                render(results, t);
-            }, 50);
+                if (t < 1) requestAnimationFrame(step);
+            };
+            step();
         };
-
-        function render(results, t) {
-            const container = document.getElementById('display');
-            container.innerHTML = `Time: ${t.toFixed(2)}<br>`;
-            results.forEach(res => {
-                container.innerHTML += `
-                    <div>
-                        ${res.capability} (${res.antennaTarget}): ${res.intensityPerc}% effort
-                        <div class="output-bar"><div class="fill" style="width: ${res.intensityPerc}%"></div></div>
-                    </div><br>`;
-            });
-        }
     </script>
 </body>
 </html>
