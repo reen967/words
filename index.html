@@ -2,105 +2,103 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UARL | Robot Capability Compiler</title>
+    <title>UARL | Full Affective Compiler & Transition Matrix</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #fafafa; display: flex; height: 100vh; margin: 0; }
-        #creator { width: 350px; background: #fff; padding: 30px; border-right: 1px solid #eee; }
-        #output { flex-grow: 1; padding: 40px; overflow-y: auto; background: #111; color: #0f0; font-family: 'Courier New', monospace; }
-        .config-box { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
-        h1 { font-size: 1.2rem; margin-top: 0; }
-        .btn { width: 100%; padding: 12px; background: #0066ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        pre { white-space: pre-wrap; word-wrap: break-word; font-size: 0.8rem; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #eee; display: flex; height: 100vh; margin: 0; }
+        #sidebar { width: 380px; background: #151515; padding: 25px; border-right: 1px solid #333; overflow-y: auto; }
+        #viewer { flex-grow: 1; padding: 40px; display: flex; flex-direction: column; }
+        .card { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
+        .code-block { background: #000; color: #0f0; padding: 20px; border-radius: 8px; flex-grow: 1; overflow: auto; font-family: 'Fira Code', monospace; font-size: 12px; border: 1px solid #00ff0033; }
+        .btn { width: 100%; padding: 12px; background: #0066ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
+        .btn:hover { background: #0052cc; transform: translateY(-2px); }
+        h2 { font-size: 1rem; color: #0066ff; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="checkbox"] { margin-right: 10px; accent-color: #0066ff; }
     </style>
 </head>
 <body>
 
-<div id="creator">
-    <h1>1. Create Robot</h1>
-    <div class="config-box">
-        <label>Robot Name</label>
-        <input type="text" id="botName" value="Generic_Bot_01" style="width:100%; margin-bottom:10px;">
-        
-        <label><b>Select Capabilities:</b></label><br>
-        <input type="checkbox" id="has_rotation" checked> Rotation (Head/Wheels)<br>
-        <input type="checkbox" id="has_sound"> Sound (Buzzer/Speaker)<br>
-        <input type="checkbox" id="has_light"> Light (LED/Luminosity)<br>
+<div id="sidebar">
+    <h2>1. Hardware Profile</h2>
+    <div class="card">
+        <input type="text" id="botName" value="UARL_AGENT_BETA" style="width:100%; background:#333; color:#fff; border:none; padding:8px; border-radius:4px; margin-bottom:15px;">
+        <label><input type="checkbox" id="has_rotation" checked> Kinetic Rotation</label><br>
+        <label><input type="checkbox" id="has_sound" checked> Acoustic Volume</label><br>
+        <label><input type="checkbox" id="has_light"> Luminous Intensity</label>
     </div>
 
-    <h1>2. Compile</h1>
-    <button class="btn" onclick="compileRobot()">GENERATE DICTIONARY</button>
-    <button class="btn" style="background:#333;" onclick="downloadJSON()">DOWNLOAD .JSON</button>
+    <h2>2. Psychophysical Bounds</h2>
+    <div class="card">
+        <small>Weber Constant (Sensitivity):</small>
+        <input type="range" id="weber_sense" min="1" max="20" value="5" style="width:100%;">
+    </div>
+
+    <button class="btn" onclick="compileAll()">GENERATE SYSTEM</button>
+    <button class="btn" style="background:#222; border:1px solid #444;" onclick="downloadFullPackage()">DOWNLOAD ZIP/JSON</button>
 </div>
 
-<div id="output">
-    <div style="color: #666; margin-bottom: 20px;">// COMPILER OUTPUT: Waiting for configuration...</div>
-    <pre id="jsonDisplay"></pre>
+<div id="viewer">
+    <h2>System Output (Capability-Agnostic Language)</h2>
+    <div class="code-block" id="outputConsole">// INITIALIZE SYSTEM TO SEE COMPILED LOGIC...</div>
 </div>
 
 <script src="affective_data.js"></script>
 <script>
-    // Include the logic from uarl_compiler.js here or link it
     const MODALITIES = {
-        "rotation": { exponent: 1.0, weber: 0.05, curve: "t^2" },
-        "sound": { exponent: 0.6, weber: 0.10, curve: "t^0.6" },
-        "light": { exponent: 0.33, weber: 0.02, curve: "t^0.33" }
+        "rotation": { exponent: 1.0, weber: 0.05, unit: "deg/s" },
+        "sound": { exponent: 0.6, weber: 0.10, unit: "dB" },
+        "light": { exponent: 0.33, weber: 0.02, unit: "lux" }
     };
 
-    let currentDictionary = null;
+    let compiledSystem = null;
 
-    function compileRobot() {
+    function compileAll() {
         const hardware = [];
         if(document.getElementById('has_rotation').checked) hardware.push('rotation');
         if(document.getElementById('has_sound').checked) hardware.push('sound');
         if(document.getElementById('has_light').checked) hardware.push('light');
 
-        const botName = document.getElementById('botName').value;
-        
-        currentDictionary = {
-            robot: botName,
-            timestamp: new Date().toISOString(),
-            definitions: AFFECTIVE_DATA.map(emo => {
-                const entry = {
-                    word: emo.name,
-                    vector: { theta: emo.angle, p: emo.p },
-                    implementation: {}
-                };
-
+        compiledSystem = {
+            metadata: {
+                agent: document.getElementById('botName').value,
+                logic: "UARL-V2-Agnostic",
+                modalities_count: hardware.length
+            },
+            dictionary: AFFECTIVE_DATA.map(emo => {
+                let impl = {};
                 hardware.forEach(h => {
                     const spec = MODALITIES[h];
-                    // Apply Stevens' Power Law to reverse-engineer intensity
                     const intensity = Math.pow(emo.p, 1 / spec.exponent);
-                    
-                    entry.implementation[h] = {
-                        target_intensity: intensity.toFixed(4),
-                        verb: getVerb(emo.angle),
-                        jitter: (1 - emo.p).toFixed(3),
-                        step_function: `y = (t * ${intensity.toFixed(2)}) ^ ${spec.exponent}`
+                    impl[h] = {
+                        noun_intensity: intensity.toFixed(4),
+                        verb_logic: (emo.angle > 45 && emo.angle < 135) ? "Snap" : "Glide",
+                        jitter: (1 - emo.p).toFixed(3)
                     };
                 });
-                return entry;
-            })
+                return { word: emo.name, vector: [emo.angle, emo.p], hardware: impl };
+            }),
+            transitions: generateTransitionMatrix()
         };
 
-        document.getElementById('jsonDisplay').textContent = JSON.stringify(currentDictionary, null, 2);
+        document.getElementById('outputConsole').textContent = JSON.stringify(compiledSystem, null, 2);
     }
 
-    function getVerb(angle) {
-        if (angle > 45 && angle < 135) return "Snap";
-        if (angle >= 135 && angle < 225) return "Stochastic";
-        if (angle >= 225 && angle < 315) return "Decel";
-        return "LogRise";
+    function generateTransitionMatrix() {
+        // Defines the "Verbs" used to move between major Affective Quadrants
+        return {
+            "CALM_TO_ALARM": { verb: "Snap", formula: "y = t^2", duration: "120ms" },
+            "ALARM_TO_SAD": { verb: "Decel", formula: "y = sqrt(t)", duration: "900ms" },
+            "NEUTRAL_TO_HAPPY": { verb: "Surge", formula: "y = t^4", duration: "400ms" }
+        };
     }
 
-    function downloadJSON() {
-        if(!currentDictionary) return alert("Compile first!");
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentDictionary));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "robot_dictionary.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+    function downloadFullPackage() {
+        if(!compiledSystem) return alert("Please compile first.");
+        const blob = new Blob([JSON.stringify(compiledSystem, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${compiledSystem.metadata.agent}_CORE.json`;
+        a.click();
     }
 </script>
 </body>
