@@ -1,19 +1,18 @@
 /**
- * UARL Trajectories
- * Defines the mathematical 'Verbs' for smooth biological transitions.
+ * UARL Trajectory Matrix
+ * Mathematical curves for organic machine motion.
  */
-const TRAJECTORY_MODELS = {
-    "SNAP": (t) => Math.pow(t, 2),        // Arousal spike
-    "SURGE": (t) => Math.pow(t, 4),       // Aggressive looming
-    "YIELD": (t) => Math.sqrt(t),        // Gentle deceleration
-    "LOG_RISE": (t) => Math.log1p(t * 1.718), // Awakening curve
-    "STOCHASTIC": (t) => t + (Math.random() - 0.5) * 0.1 // Internal struggle
+const VERB_TRAJECTORIES = {
+    "SNAP": { curve: (t) => Math.pow(t, 2), description: "High-Arousal Attack" },
+    "SURGE": { curve: (t) => Math.pow(t, 4), description: "Looming/Aggression" },
+    "YIELD": { curve: (t) => Math.sqrt(t), description: "Deceleration/Safety" },
+    "LOG_RISE": { curve: (t) => Math.log1p(t * 1.718), description: "Biological Pulse" },
+    "STOCHASTIC": { curve: (t) => t + (Math.random() - 0.5) * 0.1, description: "Internal Struggle" }
 };
 
-function calculateVerb(startAngle, endAngle) {
-    const diff = Math.abs(endAngle - startAngle);
-    if (diff > 90) return "SNAP";
-    if (endAngle < 180 && startAngle > 180) return "LOG_RISE";
-    if (endAngle > 270) return "YIELD";
-    return "SURGE";
+function getVerbForState(angle) {
+    if (angle > 60 && angle < 120) return "SNAP";
+    if (angle >= 120 && angle < 200) return "SURGE";
+    if (angle >= 200 && angle < 300) return "YIELD";
+    return "LOG_RISE";
 }
