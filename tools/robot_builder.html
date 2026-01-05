@@ -2,65 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UARL | Robot Language Compiler</title>
+    <title>UARL | Normalized Component Compiler</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0e0e0e; color: #fff; margin: 0; display: flex; height: 100vh; }
-        #panel { width: 350px; border-right: 1px solid #333; padding: 25px; background: #1a1a1a; }
-        #display { flex-grow: 1; padding: 40px; overflow-y: auto; font-family: 'Consolas', monospace; color: #00ff41; background: #050505; }
-        .input-group { margin-bottom: 25px; }
-        button { width: 100%; padding: 12px; background: #0066ff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0052cc; }
-        pre { background: #000; padding: 15px; border-radius: 5px; border: 1px solid #00ff4133; }
+        :root { --blue: #0066ff; --dark: #111; --accent: #00ff41; }
+        body { font-family: 'Inter', sans-serif; background: var(--dark); color: #fff; display: flex; height: 100vh; margin: 0; }
+        #sidebar { width: 380px; padding: 30px; border-right: 1px solid #333; background: #181818; }
+        #output-view { flex-grow: 1; padding: 40px; overflow-y: auto; background: #050505; color: var(--accent); }
+        .comp-card { background: #222; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333; }
+        .btn { width: 100%; padding: 15px; background: var(--blue); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        pre { font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.5; }
+        h2 { font-size: 0.9rem; text-transform: uppercase; color: var(--blue); }
     </style>
 </head>
 <body>
 
-<div id="panel">
-    <h2>UARL Builder</h2>
+<div id="sidebar">
+    <h1>Robot Architect</h1>
+    <p style="font-size: 0.8rem; color: #888;">Select components. The dictionary will normalize effort relative to each component's max capacity.</p>
+    
     <div class="input-group">
-        <label>Robot ID:</label><br>
-        <input type="text" id="botId" value="PROTO_UNIT_01" style="width:100%;">
+        <h2>Logical Components</h2>
+        <div class="comp-card"><input type="checkbox" id="wheels" checked> Wheels (Locomotion)</div>
+        <div class="comp-card"><input type="checkbox" id="tilt" checked> Tilt (Gaze/Neck)</div>
+        <div class="comp-card"><input type="checkbox" id="volume"> Volume (Audio)</div>
+        <div class="comp-card"><input type="checkbox" id="light"> Luminosity (Light)</div>
     </div>
-    <div class="input-group">
-        <label>Capabilities:</label><br>
-        <input type="checkbox" id="rot" checked> Kinetic Rotation<br>
-        <input type="checkbox" id="snd" checked> Acoustic Sound<br>
-        <input type="checkbox" id="lgt"> Luminous Intensity
-    </div>
-    <button onclick="build()">COMPILE DICTIONARY</button>
+
+    <button class="btn" onclick="generateNormalizedDictionary()">COMPILE EFFORT DICTIONARY</button>
 </div>
 
-<div id="display">
-    <pre id="output">// Resulting JSON will appear here...</pre>
+<div id="output-view">
+    <div style="color: #555; margin-bottom: 10px;">// Normalized Output (%) based on Stevens' Power Law</div>
+    <pre id="jsonDisplay">// Select components and compile...</pre>
 </div>
 
 <script src="../core/affective_data.js"></script>
 <script src="../core/uarl_compiler.js"></script>
-<script src="../core/uarl_trajectories.js"></script>
 <script>
-    function build() {
-        const hardware = [];
-        if(document.getElementById('rot').checked) hardware.push('rotation');
-        if(document.getElementById('snd').checked) hardware.push('sound');
-        if(document.getElementById('lgt').checked) hardware.push('light');
+    function generateNormalizedDictionary() {
+        const components = [];
+        if(document.getElementById('wheels').checked) components.push('wheels');
+        if(document.getElementById('tilt').checked) components.push('tilt');
+        if(document.getElementById('volume').checked) components.push('volume');
+        if(document.getElementById('light').checked) components.push('light');
 
-        const dictionary = AFFECTIVE_DATA.map(emo => {
-            const compiled = compileEmotion(emo, hardware);
-            const verb = calculateVerb(339.8, emo.angle); // Relative to 'Calm' baseline
-            return {
-                word: emo.name,
-                outputs: compiled.outputs,
-                verb_path: verb
-            };
-        });
-
-        const finalPackage = {
-            robot_id: document.getElementById('botId').value,
-            compiled_at: new Date().toISOString(),
-            language_set: dictionary
+        const botDict = AFFECTIVE_DATA.map(emo => compileNormalizedEmotion(emo, components));
+        
+        const finalOutput = {
+            system: "UARL-Normalized-Effort",
+            version: "2.1",
+            dictionary: botDict
         };
 
-        document.getElementById('output').textContent = JSON.stringify(finalPackage, null, 2);
+        document.getElementById('jsonDisplay').textContent = JSON.stringify(finalOutput, null, 2);
     }
 </script>
 </body>
