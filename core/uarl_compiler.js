@@ -1,30 +1,42 @@
-/** * UARL Compiler
- * Converts Russell's Circumplex points into Capability-Agnostic Intensity 
+/** * UARL Normalized Compiler
+ * Maps emotions to % of Maximum Component Capability
  */
-const MODALITIES = {
-    "rotation": { exponent: 1.0, weber: 0.05, label: "Kinetic" },
-    "sound": { exponent: 0.6, weber: 0.10, label: "Acoustic" },
-    "light": { exponent: 0.33, weber: 0.02, label: "Luminous" }
+
+const LOGICAL_COMPONENTS = {
+    "wheels": { exponent: 1.1, weber: 0.05, aspect: "Velocity" }, // Kinetic flow
+    "tilt":   { exponent: 1.0, weber: 0.03, aspect: "Angular Position" }, // Gaze/Posture
+    "volume": { exponent: 0.6, weber: 0.10, aspect: "Amplitude" }, // Acoustic
+    "light":  { exponent: 0.33, weber: 0.02, aspect: "Luminosity" } // visual
 };
 
-function compileEmotion(emotion, hardwareList) {
+function compileNormalizedEmotion(emotion, components) {
     let mapping = {
-        name: emotion.name,
-        vector: { theta: emotion.angle, magnitude: emotion.p },
-        outputs: {}
+        word: emotion.name,
+        vector: { theta: emotion.angle, p: emotion.p },
+        effort_profile: {}
     };
 
-    hardwareList.forEach(mod => {
-        const spec = MODALITIES[mod];
-        // Reverse Stevens' Power Law: Intensity I = S^(1/a)
-        const rawIntensity = Math.pow(emotion.p, 1 / spec.exponent);
+    components.forEach(compKey => {
+        const spec = LOGICAL_COMPONENTS[compKey];
         
-        mapping.outputs[mod] = {
-            intensity: rawIntensity.toFixed(4),
-            jnd_step: (rawIntensity * spec.weber).toFixed(4),
-            jitter: (1 - emotion.p) * 0.05
+        // Reverse Stevens' Law to find Required Effort (%)
+        // Effort = (Precision ^ (1/exponent)) * 100
+        let effortPercent = Math.pow(emotion.p, 1 / spec.exponent) * 100;
+        
+        mapping.effort_profile[compKey] = {
+            max_effort_pct: effortPercent.toFixed(1) + "%",
+            verb_style: getVerbLogic(emotion.angle),
+            jitter_threshold: ((1 - emotion.p) * 5).toFixed(1) + "%", // Random drift in effort
+            attack_speed: emotion.angle < 180 ? "Fast" : "Slow" 
         };
     });
 
     return mapping;
+}
+
+function getVerbLogic(angle) {
+    if (angle > 45 && angle < 135) return "SNAP (t²)";
+    if (angle >= 135 && angle < 225) return "STOCHASTIC (Jitter)";
+    if (angle >= 225 && angle < 315) return "YIELD (√t)";
+    return "SURGE (t⁴)";
 }
