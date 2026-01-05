@@ -1,16 +1,12 @@
-/**
- * UARL Adaptive Soul Engine
- * Handles hardware constraints and redistributes communication load.
- */
-
-const CAPABILITY_WEIGHTS = {
-    audio_vol: 0.20, audio_pitch: 0.15,
-    loco_vel: 0.25, loco_steer: 0.10,
-    artic_tilt: 0.20, artic_pan: 0.10
+const COMPONENT_LOGIC = {
+    audio_vol:    { exp: 0.6, wt: 0.20, curve_map: { SNAP: "t*t", SURGE: "t*t*t*t", YIELD: "Math.sqrt(t)", LOG_RISE: "Math.log1p(t*1.718)" } },
+    audio_pitch:  { exp: 0.8, wt: 0.15, curve_map: { SNAP: "t*t", SURGE: "t*t*t*t", YIELD: "Math.sqrt(t)", LOG_RISE: "Math.log1p(t*1.718)" } },
+    loco_vel:     { exp: 1.1, wt: 0.25, curve_map: { SNAP: "t*t", SURGE: "t*t*t*t", YIELD: "Math.sqrt(t)", LOG_RISE: "Math.log1p(t*1.718)" } },
+    artic_tilt:   { exp: 1.0, wt: 0.20, curve_map: { SNAP: "t*t", SURGE: "t*t*t*t", YIELD: "Math.sqrt(t)", LOG_RISE: "Math.log1p(t*1.718)" } },
+    artic_pan:    { exp: 1.0, wt: 0.10, curve_map: { SNAP: "t*t", SURGE: "t*t*t*t", YIELD: "Math.sqrt(t)", LOG_RISE: "Math.log1p(t*1.718)" } }
 };
 
 function calculateSoulBlock(word, robot) {
-    // 1. Identify what the robot CAN actually do
     let available = [];
     if (robot.has_vol) available.push('audio_vol');
     if (robot.has_pitch) available.push('audio_pitch');
@@ -18,26 +14,29 @@ function calculateSoulBlock(word, robot) {
     if (robot.has_tilt) available.push('artic_tilt');
     if (robot.has_pan) available.push('artic_pan');
 
-    // 2. Calculate Redundancy (perceived intensity increases with more synced sensors)
     const n = available.length;
-    const redundancy = 1 / Math.sqrt(n);
-    const sStar = word.p * redundancy; // Target Sensation
+    if (n === 0) return { error: "No hardware selected" };
 
-    // 3. Redistribute Load
+    const redundancy = 1 / Math.sqrt(n);
+    const sStar = word.p * redundancy;
+    const verb = getVerbForState(word.angle);
+
     let totalWeight = 0;
-    available.forEach(a => totalWeight += CAPABILITY_WEIGHTS[a]);
+    available.forEach(a => totalWeight += COMPONENT_LOGIC[a].wt);
     
     let effortMap = {};
     available.forEach(attr => {
-        const weight = CAPABILITY_WEIGHTS[attr] * (1 / totalWeight);
-        const effort = Math.pow(sStar * weight, 1 / 0.7); // Average Stevens Exponent
+        const spec = COMPONENT_LOGIC[attr];
+        const weightMultiplier = 1 / totalWeight;
+        const loadShare = spec.wt * weightMultiplier;
+        
+        // Intensity I = (S* * LoadShare)^(1/a)
+        const effort = Math.pow(sStar * loadShare, 1 / spec.exp);
 
         effortMap[attr] = {
-            effort: (effort * 100).toFixed(1) + "%",
-            // The "Pasteable" Equation
-            equation: `start + (${effort.toFixed(4)} - start) * ${getCurve(word.angle)}`,
-            // Communication Mode
-            mode: robot.has_cam ? "Social-Lock (Targeted)" : "Ambient-Pulse (Broadcast)"
+            target_pct: (effort * 100).toFixed(1) + "%",
+            equation: `start + (${effort.toFixed(4)} - start) * ${spec.curve_map[verb]}`,
+            mode: robot.has_cam ? "Targeted" : "Broadcast"
         };
     });
 
