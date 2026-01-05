@@ -1,32 +1,13 @@
 const UARL_DICTIONARY = [
-    // Operational States
     { name: "I_AM_ALIVE", angle: 330, p: 0.30 },
     { name: "I_SEE_YOU", angle: 90, p: 0.85 },
     { name: "APPROACHING", angle: 120, p: 0.95 },
     { name: "YIELDING", angle: 240, p: 0.45 },
-    // Core Affective States
     { name: "Alarmed", angle: 73.8, p: 0.95 },
-    { name: "Tense", angle: 92.8, p: 0.92 },
     { name: "Angry", angle: 111.8, p: 0.88 },
-    { name: "Afraid", angle: 130.8, p: 0.90 },
-    { name: "Frustrated", angle: 149.8, p: 0.82 },
-    { name: "Annoyed", angle: 168.8, p: 0.78 },
     { name: "Miserable", angle: 187.8, p: 0.85 },
     { name: "Sad", angle: 206.8, p: 0.80 },
-    { name: "Gloomy", angle: 225.8, p: 0.75 },
-    { name: "Depressed", angle: 244.8, p: 0.70 },
-    { name: "Bored", angle: 263.8, p: 0.65 },
-    { name: "Droopy", angle: 282.8, p: 0.60 },
-    { name: "Tired", angle: 301.8, p: 0.55 },
-    { name: "Sleepy", angle: 320.8, p: 0.50 },
     { name: "Calm", angle: 339.8, p: 0.60 },
-    { name: "Relaxed", angle: 358.8, p: 0.70 },
     { name: "Satisfied", angle: 17.8, p: 0.85 },
-    { name: "At Ease", angle: 36.8, p: 0.90 },
-    { name: "Content", angle: 55.8, p: 0.92 },
-    { name: "Serene", angle: 74.8, p: 0.94 },
-    { name: "Happy", angle: 93.8, p: 0.96 },
-    { name: "Delighted", angle: 112.8, p: 0.98 },
-    { name: "Excited", angle: 131.8, p: 0.95 },
-    { name: "Astonished", angle: 150.8, p: 0.92 }
+    { name: "Excited", angle: 131.8, p: 0.95 }
 ];
