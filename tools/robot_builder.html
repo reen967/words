@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UARL | Robot Language Compiler</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0e0e0e; color: #fff; margin: 0; display: flex; height: 100vh; }
+        #panel { width: 350px; border-right: 1px solid #333; padding: 25px; background: #1a1a1a; }
+        #display { flex-grow: 1; padding: 40px; overflow-y: auto; font-family: 'Consolas', monospace; color: #00ff41; background: #050505; }
+        .input-group { margin-bottom: 25px; }
+        button { width: 100%; padding: 12px; background: #0066ff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0052cc; }
+        pre { background: #000; padding: 15px; border-radius: 5px; border: 1px solid #00ff4133; }
+    </style>
+</head>
+<body>
+
+<div id="panel">
+    <h2>UARL Builder</h2>
+    <div class="input-group">
+        <label>Robot ID:</label><br>
+        <input type="text" id="botId" value="PROTO_UNIT_01" style="width:100%;">
+    </div>
+    <div class="input-group">
+        <label>Capabilities:</label><br>
+        <input type="checkbox" id="rot" checked> Kinetic Rotation<br>
+        <input type="checkbox" id="snd" checked> Acoustic Sound<br>
+        <input type="checkbox" id="lgt"> Luminous Intensity
+    </div>
+    <button onclick="build()">COMPILE DICTIONARY</button>
+</div>
+
+<div id="display">
+    <pre id="output">// Resulting JSON will appear here...</pre>
+</div>
+
+<script src="../core/affective_data.js"></script>
+<script src="../core/uarl_compiler.js"></script>
+<script src="../core/uarl_trajectories.js"></script>
+<script>
+    function build() {
+        const hardware = [];
+        if(document.getElementById('rot').checked) hardware.push('rotation');
+        if(document.getElementById('snd').checked) hardware.push('sound');
+        if(document.getElementById('lgt').checked) hardware.push('light');
+
+        const dictionary = AFFECTIVE_DATA.map(emo => {
+            const compiled = compileEmotion(emo, hardware);
+            const verb = calculateVerb(339.8, emo.angle); // Relative to 'Calm' baseline
+            return {
+                word: emo.name,
+                outputs: compiled.outputs,
+                verb_path: verb
+            };
+        });
+
+        const finalPackage = {
+            robot_id: document.getElementById('botId').value,
+            compiled_at: new Date().toISOString(),
+            language_set: dictionary
+        };
+
+        document.getElementById('output').textContent = JSON.stringify(finalPackage, null, 2);
+    }
+</script>
+</body>
+</html>
