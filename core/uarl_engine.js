@@ -15,7 +15,7 @@ function calculateSoulBlock(word, robot) {
     if (robot.has_pan) available.push('artic_pan');
 
     const n = available.length;
-    if (n === 0) return { error: "No hardware selected" };
+    if (n === 0) return {};
 
     const redundancy = 1 / Math.sqrt(n);
     const sStar = word.p * redundancy;
@@ -28,10 +28,7 @@ function calculateSoulBlock(word, robot) {
     available.forEach(attr => {
         const spec = COMPONENT_LOGIC[attr];
         const weightMultiplier = 1 / totalWeight;
-        const loadShare = spec.wt * weightMultiplier;
-        
-        // Intensity I = (S* * LoadShare)^(1/a)
-        const effort = Math.pow(sStar * loadShare, 1 / spec.exp);
+        const effort = Math.pow(sStar * (spec.wt * weightMultiplier), 1 / spec.exp);
 
         effortMap[attr] = {
             target_pct: (effort * 100).toFixed(1) + "%",
@@ -39,6 +36,5 @@ function calculateSoulBlock(word, robot) {
             mode: robot.has_cam ? "Targeted" : "Broadcast"
         };
     });
-
     return effortMap;
 }
