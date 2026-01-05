@@ -2,103 +2,133 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UARL | Full Affective Compiler & Transition Matrix</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UARL | Universal Affective Robot Language</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #eee; display: flex; height: 100vh; margin: 0; }
-        #sidebar { width: 380px; background: #151515; padding: 25px; border-right: 1px solid #333; overflow-y: auto; }
-        #viewer { flex-grow: 1; padding: 40px; display: flex; flex-direction: column; }
-        .card { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
-        .code-block { background: #000; color: #0f0; padding: 20px; border-radius: 8px; flex-grow: 1; overflow: auto; font-family: 'Fira Code', monospace; font-size: 12px; border: 1px solid #00ff0033; }
-        .btn { width: 100%; padding: 12px; background: #0066ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
-        .btn:hover { background: #0052cc; transform: translateY(-2px); }
-        h2 { font-size: 1rem; color: #0066ff; text-transform: uppercase; letter-spacing: 1px; }
-        input[type="checkbox"] { margin-right: 10px; accent-color: #0066ff; }
+        :root { --primary: #0066ff; --bg: #0a0a0a; --card: #151515; --text: #eee; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; }
+        
+        /* Layout */
+        .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+        header { text-align: center; padding: 60px 0; border-bottom: 1px solid #333; }
+        
+        /* Simulation Box */
+        #simulator { 
+            background: var(--card); border: 1px solid #333; border-radius: 12px; 
+            padding: 30px; margin: 40px 0; display: flex; align-items: center; gap: 40px;
+        }
+        #robot-viz { 
+            width: 150px; height: 150px; border-radius: 50%; 
+            border: 4px solid var(--primary); display: flex; align-items: center; 
+            justify-content: center; position: relative; transition: all 0.3s ease;
+        }
+        .eye { width: 20px; height: 20px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 15px var(--primary); }
+
+        /* Typography */
+        h1 { font-size: 2.5rem; letter-spacing: -1px; margin: 0; }
+        .subtitle { color: #888; font-size: 1.2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .feature-card { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid #222; }
+        
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .tag { background: #333; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid transparent; }
+        .tag:hover { border-color: var(--primary); color: var(--primary); }
     </style>
 </head>
 <body>
 
-<div id="sidebar">
-    <h2>1. Hardware Profile</h2>
-    <div class="card">
-        <input type="text" id="botName" value="UARL_AGENT_BETA" style="width:100%; background:#333; color:#fff; border:none; padding:8px; border-radius:4px; margin-bottom:15px;">
-        <label><input type="checkbox" id="has_rotation" checked> Kinetic Rotation</label><br>
-        <label><input type="checkbox" id="has_sound" checked> Acoustic Volume</label><br>
-        <label><input type="checkbox" id="has_light"> Luminous Intensity</label>
+<div class="container">
+    <header>
+        <h1>UARL</h1>
+        <p class="subtitle">Universal Affective Robot Language</p>
+        <p>A psychophysical framework for biological machine communication.</p>
+    </header>
+
+    <section id="simulator">
+        <div id="robot-viz">
+            <div class="eye" id="robot-eye"></div>
+        </div>
+        <div style="flex-grow: 1;">
+            <h3>Live Affective Simulator</h3>
+            <p>Select a "Word" to see how the robot uses <b>Verb Logic</b> to reach a <b>Noun Anchor</b>.</p>
+            <div class="btn-group" id="word-tags">
+                </div>
+            <p id="logic-info" style="font-family: monospace; color: #00ff41; margin-top: 20px; font-size: 0.9rem;">
+                // Awaiting input...
+            </p>
+        </div>
+    </section>
+
+    <div class="grid">
+        <div class="feature-card">
+            <h3>Weber-Stevens Logic</h3>
+            <p>Uses psychophysical power laws to calibrate intensities across different hardware modalities, ensuring a consistent human reaction regardless of the robot's form.</p>
+        </div>
+        <div class="feature-card">
+            <h3>The Uncanny Valley Filter</h3>
+            <p>Replaces linear mechanical movement with biological velocity curves (t², √t) and stochastic jitter to simulate life.</p>
+        </div>
     </div>
 
-    <h2>2. Psychophysical Bounds</h2>
-    <div class="card">
-        <small>Weber Constant (Sensitivity):</small>
-        <input type="range" id="weber_sense" min="1" max="20" value="5" style="width:100%;">
-    </div>
-
-    <button class="btn" onclick="compileAll()">GENERATE SYSTEM</button>
-    <button class="btn" style="background:#222; border:1px solid #444;" onclick="downloadFullPackage()">DOWNLOAD ZIP/JSON</button>
+    <footer style="margin-top: 60px; text-align: center; opacity: 0.5;">
+        <a href="tools/robot_builder.html" style="color: var(--primary);">Open Robot Capability Compiler →</a>
+    </footer>
 </div>
 
-<div id="viewer">
-    <h2>System Output (Capability-Agnostic Language)</h2>
-    <div class="code-block" id="outputConsole">// INITIALIZE SYSTEM TO SEE COMPILED LOGIC...</div>
-</div>
+<script src="core/affective_data.js"></script>
+<script src="core/uarl_compiler.js"></script>
+<script src="core/uarl_trajectories.js"></script>
 
-<script src="affective_data.js"></script>
 <script>
-    const MODALITIES = {
-        "rotation": { exponent: 1.0, weber: 0.05, unit: "deg/s" },
-        "sound": { exponent: 0.6, weber: 0.10, unit: "dB" },
-        "light": { exponent: 0.33, weber: 0.02, unit: "lux" }
-    };
+    const eye = document.getElementById('robot-eye');
+    const info = document.getElementById('logic-info');
+    const tagsContainer = document.getElementById('word-tags');
 
-    let compiledSystem = null;
+    // Create buttons for major emotional states
+    const sampleWords = ["Alarmed", "Calm", "Miserable", "Satisfied", "Excited", "Tired"];
+    
+    sampleWords.forEach(wordName => {
+        const emo = AFFECTIVE_DATA.find(e => e.name === wordName);
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerText = wordName;
+        tag.onclick = () => simulate(emo);
+        tagsContainer.appendChild(tag);
+    });
 
-    function compileAll() {
-        const hardware = [];
-        if(document.getElementById('has_rotation').checked) hardware.push('rotation');
-        if(document.getElementById('has_sound').checked) hardware.push('sound');
-        if(document.getElementById('has_light').checked) hardware.push('light');
+    function simulate(emo) {
+        const verb = calculateVerb(339.8, emo.angle); // Relative to Calm
+        const trajectory = TRAJECTORY_MODELS[verb];
+        
+        // Update Info Text
+        info.innerHTML = `WORD: "${emo.name}"<br>NOUN ANCHOR: θ=${emo.angle}°, P=${emo.p}<br>VERB LOGIC: ${verb}`;
 
-        compiledSystem = {
-            metadata: {
-                agent: document.getElementById('botName').value,
-                logic: "UARL-V2-Agnostic",
-                modalities_count: hardware.length
-            },
-            dictionary: AFFECTIVE_DATA.map(emo => {
-                let impl = {};
-                hardware.forEach(h => {
-                    const spec = MODALITIES[h];
-                    const intensity = Math.pow(emo.p, 1 / spec.exponent);
-                    impl[h] = {
-                        noun_intensity: intensity.toFixed(4),
-                        verb_logic: (emo.angle > 45 && emo.angle < 135) ? "Snap" : "Glide",
-                        jitter: (1 - emo.p).toFixed(3)
-                    };
-                });
-                return { word: emo.name, vector: [emo.angle, emo.p], hardware: impl };
-            }),
-            transitions: generateTransitionMatrix()
-        };
+        // Visual Animation
+        const start = performance.now();
+        const duration = 600;
 
-        document.getElementById('outputConsole').textContent = JSON.stringify(compiledSystem, null, 2);
-    }
+        function animate(time) {
+            let progress = (time - start) / duration;
+            if (progress > 1) progress = 1;
 
-    function generateTransitionMatrix() {
-        // Defines the "Verbs" used to move between major Affective Quadrants
-        return {
-            "CALM_TO_ALARM": { verb: "Snap", formula: "y = t^2", duration: "120ms" },
-            "ALARM_TO_SAD": { verb: "Decel", formula: "y = sqrt(t)", duration: "900ms" },
-            "NEUTRAL_TO_HAPPY": { verb: "Surge", formula: "y = t^4", duration: "400ms" }
-        };
-    }
+            const t = trajectory(progress);
+            
+            // Apply scale and jitter based on "P" (Precision)
+            const jitter = (1 - emo.p) * 10;
+            const randX = (Math.random() - 0.5) * jitter;
+            const randY = (Math.random() - 0.5) * jitter;
+            
+            // Map angle to CSS hue
+            eye.style.background = `hsl(${emo.angle}, 100%, 50%)`;
+            eye.style.boxShadow = `0 0 20px hsl(${emo.angle}, 100%, 50%)`;
+            
+            // Scale and Translate
+            const scale = 1 + (t * (emo.p - 0.5));
+            eye.style.transform = `scale(${scale}) translate(${randX}px, ${randY}px)`;
 
-    function downloadFullPackage() {
-        if(!compiledSystem) return alert("Please compile first.");
-        const blob = new Blob([JSON.stringify(compiledSystem, null, 2)], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${compiledSystem.metadata.agent}_CORE.json`;
-        a.click();
+            if (progress < 1) requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
     }
 </script>
 </body>
