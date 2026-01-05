@@ -1,135 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UARL | Universal Affective Robot Language</title>
+    <title>UARL Framework</title>
     <style>
-        :root { --primary: #0066ff; --bg: #0a0a0a; --card: #151515; --text: #eee; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; }
-        
-        /* Layout */
-        .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
-        header { text-align: center; padding: 60px 0; border-bottom: 1px solid #333; }
-        
-        /* Simulation Box */
-        #simulator { 
-            background: var(--card); border: 1px solid #333; border-radius: 12px; 
-            padding: 30px; margin: 40px 0; display: flex; align-items: center; gap: 40px;
-        }
-        #robot-viz { 
-            width: 150px; height: 150px; border-radius: 50%; 
-            border: 4px solid var(--primary); display: flex; align-items: center; 
-            justify-content: center; position: relative; transition: all 0.3s ease;
-        }
-        .eye { width: 20px; height: 20px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 15px var(--primary); }
-
-        /* Typography */
-        h1 { font-size: 2.5rem; letter-spacing: -1px; margin: 0; }
-        .subtitle { color: #888; font-size: 1.2rem; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .feature-card { background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid #222; }
-        
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-        .tag { background: #333; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid transparent; }
-        .tag:hover { border-color: var(--primary); color: var(--primary); }
+        body { background: #0a0a0a; color: #fff; font-family: 'Inter', sans-serif; text-align: center; }
+        .hero { padding: 100px 20px; }
+        #canvas { width: 200px; height: 200px; border: 2px solid #0066ff; border-radius: 50%; margin: 40px auto; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .pulse { width: 50px; height: 50px; background: #0066ff; border-radius: 50%; box-shadow: 0 0 20px #0066ff; }
+        .links { margin-top: 50px; }
+        a { color: #0066ff; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <header>
-        <h1>UARL</h1>
-        <p class="subtitle">Universal Affective Robot Language</p>
-        <p>A psychophysical framework for biological machine communication.</p>
-    </header>
-
-    <section id="simulator">
-        <div id="robot-viz">
-            <div class="eye" id="robot-eye"></div>
-        </div>
-        <div style="flex-grow: 1;">
-            <h3>Live Affective Simulator</h3>
-            <p>Select a "Word" to see how the robot uses <b>Verb Logic</b> to reach a <b>Noun Anchor</b>.</p>
-            <div class="btn-group" id="word-tags">
-                </div>
-            <p id="logic-info" style="font-family: monospace; color: #00ff41; margin-top: 20px; font-size: 0.9rem;">
-                // Awaiting input...
-            </p>
-        </div>
-    </section>
-
-    <div class="grid">
-        <div class="feature-card">
-            <h3>Weber-Stevens Logic</h3>
-            <p>Uses psychophysical power laws to calibrate intensities across different hardware modalities, ensuring a consistent human reaction regardless of the robot's form.</p>
-        </div>
-        <div class="feature-card">
-            <h3>The Uncanny Valley Filter</h3>
-            <p>Replaces linear mechanical movement with biological velocity curves (t², √t) and stochastic jitter to simulate life.</p>
+    <div class="hero">
+        <h1>Universal Affective Robot Language</h1>
+        <p>A normalized effort framework based on Stevens' Power Law.</p>
+        
+        <div id="canvas"><div class="pulse" id="dot"></div></div>
+        
+        <p id="status">Current State: Idle (I_AM_ALIVE)</p>
+        
+        <div class="links">
+            <a href="tools/robot_builder.html">Open Robot Architect Tool →</a>
         </div>
     </div>
-
-    <footer style="margin-top: 60px; text-align: center; opacity: 0.5;">
-        <a href="tools/robot_builder.html" style="color: var(--primary);">Open Robot Capability Compiler →</a>
-    </footer>
-</div>
-
-<script src="core/affective_data.js"></script>
-<script src="core/uarl_compiler.js"></script>
-<script src="core/uarl_trajectories.js"></script>
-
-<script>
-    const eye = document.getElementById('robot-eye');
-    const info = document.getElementById('logic-info');
-    const tagsContainer = document.getElementById('word-tags');
-
-    // Create buttons for major emotional states
-    const sampleWords = ["Alarmed", "Calm", "Miserable", "Satisfied", "Excited", "Tired"];
-    
-    sampleWords.forEach(wordName => {
-        const emo = AFFECTIVE_DATA.find(e => e.name === wordName);
-        const tag = document.createElement('div');
-        tag.className = 'tag';
-        tag.innerText = wordName;
-        tag.onclick = () => simulate(emo);
-        tagsContainer.appendChild(tag);
-    });
-
-    function simulate(emo) {
-        const verb = calculateVerb(339.8, emo.angle); // Relative to Calm
-        const trajectory = TRAJECTORY_MODELS[verb];
-        
-        // Update Info Text
-        info.innerHTML = `WORD: "${emo.name}"<br>NOUN ANCHOR: θ=${emo.angle}°, P=${emo.p}<br>VERB LOGIC: ${verb}`;
-
-        // Visual Animation
-        const start = performance.now();
-        const duration = 600;
-
-        function animate(time) {
-            let progress = (time - start) / duration;
-            if (progress > 1) progress = 1;
-
-            const t = trajectory(progress);
-            
-            // Apply scale and jitter based on "P" (Precision)
-            const jitter = (1 - emo.p) * 10;
-            const randX = (Math.random() - 0.5) * jitter;
-            const randY = (Math.random() - 0.5) * jitter;
-            
-            // Map angle to CSS hue
-            eye.style.background = `hsl(${emo.angle}, 100%, 50%)`;
-            eye.style.boxShadow = `0 0 20px hsl(${emo.angle}, 100%, 50%)`;
-            
-            // Scale and Translate
-            const scale = 1 + (t * (emo.p - 0.5));
-            eye.style.transform = `scale(${scale}) translate(${randX}px, ${randY}px)`;
-
-            if (progress < 1) requestAnimationFrame(animate);
-        }
-        requestAnimationFrame(animate);
-    }
-</script>
 </body>
 </html>
