@@ -1,51 +1,84 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>UARL Architect</title>
+    <title>UARL | Capability-Agnostic Architect</title>
     <style>
-        body { font-family: sans-serif; background: #111; color: #eee; display: flex; margin: 0; height: 100vh; }
-        #sidebar { width: 350px; background: #222; padding: 20px; border-right: 1px solid #444; }
-        #viewer { flex-grow: 1; padding: 40px; overflow-y: auto; background: #050505; color: #00ff41; }
-        .comp { background: #333; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #444; }
-        .btn { width: 100%; padding: 15px; background: #0066ff; color: #fff; border: none; cursor: pointer; font-weight: bold; }
-        .stress { color: #ff4444; font-weight: bold; }
+        body { font-family: 'Inter', sans-serif; background: #0f0f0f; color: #fff; display: flex; height: 100vh; margin: 0; }
+        #config { width: 450px; background: #1a1a1a; padding: 30px; border-right: 1px solid #333; overflow-y: auto; }
+        #dictionary-view { flex-grow: 1; padding: 40px; background: #050505; color: #00ff41; overflow-y: auto; }
+        .section { margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; }
+        .check-item { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 0.9rem; }
+        h3 { color: #0066ff; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .btn { background: #0066ff; color: white; padding: 15px; border: none; width: 100%; cursor: pointer; font-weight: bold; border-radius: 4px; }
     </style>
 </head>
 <body>
-    <div id="sidebar">
-        <h2>1. Capability Profile</h2>
-        <div class="comp"><input type="checkbox" id="locomotion" checked> Locomotion (Looming)</div>
-        <div class="comp"><input type="checkbox" id="tilt" checked> Tilt (Gaze/Engagement)</div>
-        <div class="comp"><input type="checkbox" id="audio"> Audio (Amplitude/Pitch)</div>
-        <div class="comp"><input type="checkbox" id="light"> Light (Luminance/Hue)</div>
-        <button class="btn" onclick="compile()">COMPILE & COMPENSATE</button>
-    </div>
-    <div id="viewer">
-        <pre id="output">// Results will show adaptive effort distribution...</pre>
+
+<div id="config">
+    <h1>Robot Architect</h1>
+    
+    <div class="section">
+        <h3>Movement (Wheels/Base)</h3>
+        <div class="check-item"><input type="checkbox" id="has_wheels" checked> Can move around</div>
+        <div class="check-item"><input type="checkbox" id="has_360"> Can steer in any direction (360°)</div>
     </div>
 
-    <script src="../core/uarl_data.js"></script>
-    <script src="../core/uarl_engine.js"></script>
-    <script src="../core/uarl_trajectories.js"></script>
-    <script>
-        function compile() {
-            const active = [];
-            if(document.getElementById('locomotion').checked) active.push('locomotion');
-            if(document.getElementById('tilt').checked) active.push('tilt');
-            if(document.getElementById('audio').checked) active.push('audio');
-            if(document.getElementById('light').checked) active.push('light');
+    <div class="section">
+        <h3>Head & Body Articulation</h3>
+        <div class="check-item"><input type="checkbox" id="has_tilt" checked> Can tilt Up/Down</div>
+        <div class="check-item"><input type="checkbox" id="has_pan"> Can rotate Left/Right</div>
+    </div>
 
-            const dictionary = UARL_DICTIONARY.map(word => {
-                const adaptive = calculateAdaptiveEffort(word.p, active);
-                return {
-                    word: word.name,
-                    verb: getVerbForState(word.angle),
-                    effort_map: adaptive.redistribution,
-                    redundancy_bonus: (1 - adaptive.redundancyFactor).toFixed(2)
-                };
-            });
-            document.getElementById('output').textContent = JSON.stringify(dictionary, null, 2);
+    <div class="section">
+        <h3>Sound (Speakers)</h3>
+        <div class="check-item"><input type="checkbox" id="has_vol" checked> Can change Volume</div>
+        <div class="check-item"><input type="checkbox" id="has_pitch"> Can change Pitch (High/Low)</div>
+    </div>
+
+    <div class="section">
+        <h3>Intelligence (Sensors)</h3>
+        <div class="check-item"><input type="checkbox" id="has_vision"> Can see/locate humans (Camera)</div>
+        <div class="check-item"><input type="checkbox" id="has_prox" checked> Can only sense distance (Proximity)</div>
+    </div>
+
+    <button class="btn" onclick="generate()">GENERATE MY DICTIONARY</button>
+</div>
+
+<div id="dictionary-view">
+    <pre id="output">// Your custom robot language will appear here...</pre>
+</div>
+
+<script src="../core/uarl_data.js"></script>
+<script src="../core/uarl_engine.js"></script>
+<script>
+    function generate() {
+        const robot = {
+            has_wheels: document.getElementById('has_wheels').checked,
+            has_360: document.getElementById('has_360').checked,
+            has_tilt: document.getElementById('has_tilt').checked,
+            has_pan: document.getElementById('has_pan').checked,
+            has_vol: document.getElementById('has_vol').checked,
+            has_pitch: document.getElementById('has_pitch').checked,
+            has_vision: document.getElementById('has_vision').checked
+        };
+
+        const result = UARL_DICTIONARY.map(word => {
+            return {
+                word: word.name,
+                logic: calculateCompensatedBlock(word, robot),
+                behavior_notes: getContextNotes(word, robot)
+            };
+        });
+
+        document.getElementById('output').textContent = JSON.stringify(result, null, 2);
+    }
+
+    function getContextNotes(word, robot) {
+        if (!robot.has_vision && word.name === "I_SEE_YOU") {
+            return "NOTE: No vision detected. Robot will perform a 'Broadcast Search' (swaying) to imply it is looking for the source.";
         }
-    </script>
+        return "Standard execution.";
+    }
+</script>
 </body>
 </html>
