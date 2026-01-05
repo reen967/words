@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UARL | Robot Capability Compiler</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #fafafa; display: flex; height: 100vh; margin: 0; }
+        #creator { width: 350px; background: #fff; padding: 30px; border-right: 1px solid #eee; }
+        #output { flex-grow: 1; padding: 40px; overflow-y: auto; background: #111; color: #0f0; font-family: 'Courier New', monospace; }
+        .config-box { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
+        h1 { font-size: 1.2rem; margin-top: 0; }
+        .btn { width: 100%; padding: 12px; background: #0066ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div id="creator">
+    <h1>1. Create Robot</h1>
+    <div class="config-box">
+        <label>Robot Name</label>
+        <input type="text" id="botName" value="Generic_Bot_01" style="width:100%; margin-bottom:10px;">
+        
+        <label><b>Select Capabilities:</b></label><br>
+        <input type="checkbox" id="has_rotation" checked> Rotation (Head/Wheels)<br>
+        <input type="checkbox" id="has_sound"> Sound (Buzzer/Speaker)<br>
+        <input type="checkbox" id="has_light"> Light (LED/Luminosity)<br>
+    </div>
+
+    <h1>2. Compile</h1>
+    <button class="btn" onclick="compileRobot()">GENERATE DICTIONARY</button>
+    <button class="btn" style="background:#333;" onclick="downloadJSON()">DOWNLOAD .JSON</button>
+</div>
+
+<div id="output">
+    <div style="color: #666; margin-bottom: 20px;">// COMPILER OUTPUT: Waiting for configuration...</div>
+    <pre id="jsonDisplay"></pre>
+</div>
+
+<script src="affective_data.js"></script>
+<script>
+    // Include the logic from uarl_compiler.js here or link it
+    const MODALITIES = {
+        "rotation": { exponent: 1.0, weber: 0.05, curve: "t^2" },
+        "sound": { exponent: 0.6, weber: 0.10, curve: "t^0.6" },
+        "light": { exponent: 0.33, weber: 0.02, curve: "t^0.33" }
+    };
+
+    let currentDictionary = null;
+
+    function compileRobot() {
+        const hardware = [];
+        if(document.getElementById('has_rotation').checked) hardware.push('rotation');
+        if(document.getElementById('has_sound').checked) hardware.push('sound');
+        if(document.getElementById('has_light').checked) hardware.push('light');
+
+        const botName = document.getElementById('botName').value;
+        
+        currentDictionary = {
+            robot: botName,
+            timestamp: new Date().toISOString(),
+            definitions: AFFECTIVE_DATA.map(emo => {
+                const entry = {
+                    word: emo.name,
+                    vector: { theta: emo.angle, p: emo.p },
+                    implementation: {}
+                };
+
+                hardware.forEach(h => {
+                    const spec = MODALITIES[h];
+                    // Apply Stevens' Power Law to reverse-engineer intensity
+                    const intensity = Math.pow(emo.p, 1 / spec.exponent);
+                    
+                    entry.implementation[h] = {
+                        target_intensity: intensity.toFixed(4),
+                        verb: getVerb(emo.angle),
+                        jitter: (1 - emo.p).toFixed(3),
+                        step_function: `y = (t * ${intensity.toFixed(2)}) ^ ${spec.exponent}`
+                    };
+                });
+                return entry;
+            })
+        };
+
+        document.getElementById('jsonDisplay').textContent = JSON.stringify(currentDictionary, null, 2);
+    }
+
+    function getVerb(angle) {
+        if (angle > 45 && angle < 135) return "Snap";
+        if (angle >= 135 && angle < 225) return "Stochastic";
+        if (angle >= 225 && angle < 315) return "Decel";
+        return "LogRise";
+    }
+
+    function downloadJSON() {
+        if(!currentDictionary) return alert("Compile first!");
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentDictionary));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "robot_dictionary.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+</script>
+</body>
+</html>
