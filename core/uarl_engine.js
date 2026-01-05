@@ -1,49 +1,43 @@
 /**
- * UARL Adaptive Engine v4 (Constraint-Aware)
+ * UARL Adaptive Soul Engine
+ * Handles hardware constraints and redistributes communication load.
  */
-const COMPONENT_LOGIC = {
-    audio: { 
-        vol: { exp: 0.6, wt: 0.15 }, 
-        pitch: { exp: 0.8, wt: 0.10 } 
-    },
-    locomotion: { 
-        velocity: { exp: 1.1, wt: 0.25 }, 
-        rotation: { exp: 1.0, wt: 0.15 } 
-    },
-    articulation: { 
-        tilt: { exp: 1.0, wt: 0.20 }, 
-        pan: { exp: 1.0, wt: 0.15 } 
-    }
+
+const CAPABILITY_WEIGHTS = {
+    audio_vol: 0.20, audio_pitch: 0.15,
+    loco_vel: 0.25, loco_steer: 0.10,
+    artic_tilt: 0.20, artic_pan: 0.10
 };
 
-function calculateCompensatedBlock(word, robot) {
-    // 1. Filter only what the robot CAN do
-    let activeWeights = 0;
+function calculateSoulBlock(word, robot) {
+    // 1. Identify what the robot CAN actually do
     let available = [];
-
     if (robot.has_vol) available.push('audio_vol');
     if (robot.has_pitch) available.push('audio_pitch');
-    if (robot.has_tilt) available.push('artic_tilt');
     if (robot.has_wheels) available.push('loco_vel');
+    if (robot.has_tilt) available.push('artic_tilt');
+    if (robot.has_pan) available.push('artic_pan');
 
-    // 2. Redistribute S* (Target Sensation)
+    // 2. Calculate Redundancy (perceived intensity increases with more synced sensors)
     const n = available.length;
     const redundancy = 1 / Math.sqrt(n);
-    const sStar = word.p * redundancy;
+    const sStar = word.p * redundancy; // Target Sensation
 
+    // 3. Redistribute Load
+    let totalWeight = 0;
+    available.forEach(a => totalWeight += CAPABILITY_WEIGHTS[a]);
+    
     let effortMap = {};
     available.forEach(attr => {
-        // Find the weight and exponent for this specific sub-capability
-        const [cat, sub] = attr.split('_');
-        const spec = COMPONENT_LOGIC[cat === 'audio' ? 'audio' : cat === 'loco' ? 'locomotion' : 'articulation'][sub];
-        
-        // Multiplier based on missing parts
-        const effort = Math.pow(sStar * (1/n), 1 / spec.exp);
+        const weight = CAPABILITY_WEIGHTS[attr] * (1 / totalWeight);
+        const effort = Math.pow(sStar * weight, 1 / 0.7); // Average Stevens Exponent
 
         effortMap[attr] = {
-            target: effort.toFixed(4),
+            effort: (effort * 100).toFixed(1) + "%",
+            // The "Pasteable" Equation
             equation: `start + (${effort.toFixed(4)} - start) * ${getCurve(word.angle)}`,
-            intent: robot.has_vision ? "Target-Locked" : "Broadcast-Mode"
+            // Communication Mode
+            mode: robot.has_cam ? "Social-Lock (Targeted)" : "Ambient-Pulse (Broadcast)"
         };
     });
 
